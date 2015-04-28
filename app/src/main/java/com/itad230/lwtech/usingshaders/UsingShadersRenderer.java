@@ -18,8 +18,10 @@ import util.LoggerConfig;
 import util.ShaderHelper;
 import util.TextResourceReader;
 
+import static android.opengl.GLES20.GL_CULL_FACE;
 import static android.opengl.GLES20.glClear;
 import static android.opengl.GLES20.glClearColor;
+import static android.opengl.GLES20.glEnable;
 import static android.opengl.GLES20.glGetAttribLocation;
 import static android.opengl.GLES20.glGetUniformLocation;
 import static android.opengl.GLES20.glUseProgram;
@@ -37,33 +39,20 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
     private static final String USINGSHADERSRENDERER = "UsingShadersRenderer";
 
     private final Context context;
-    //private int program;
-
-    private static final String A_COLOR = "a_Color";      // constant name for attribute a_Color
-    //private int aColorLocation;                         // location of a_Color
-    //private int colorId;                                // used to pass value to a_Color
-
-    private static final String A_POSITION = "a_Position";    // constant name for attribute a_Position
-    //private int aPositionLocation;                          // location of a_Position
-    //private int positionId;                                 // used to pass value to a_Position
-
-    private static final String U_MVPMATRIX = "u_MVPMatrix";      // constant name for uniform MVP matrix
-    //private int uMVPMatrixLocation;                             // location of u_MVPMatrix
-    //private int mvpMatrixId;                                    // used to pass value to u_MVPMatrix
 
     private float[] modelMatrix = new float[16];        // model transformation matrix
     private float[] viewMatrix = new float[16];         // view transformation matrix
     private float[] projectionMatrix = new float[16];   // 2D projection matrix
     private float[] mvpMatrix = new float[16];          // combined model/view/projection matrix
+    private float[] lightModelMatrix = new float[16];   //copy of the model matrix for the light position
 
-    //copy of the model matrix for the light position
-    private float[] lightModelMatrix = new float[16];
 
-    // float buffers for cube data
-    private final FloatBuffer cubePositions;
-    private final FloatBuffer cubeColors;
-    private final FloatBuffer cubeNormals;
+    // names for fields in the shaders
+    private static final String A_COLOR = "a_Color";      // constant name for attribute a_Color
+    private static final String A_POSITION = "a_Position";    // constant name for attribute a_Position
+    private static final String U_MVPMATRIX = "u_MVPMatrix";  // constant name for uniform MVP matrix
 
+    // id's (or handles) for fields in the shaders
     private int mvpMatrixId;    // for passing model/view/projection matrix
     private int mvMatrixId;     // for passing model/view matrix
     private int lightPosId;     // for passing light position
@@ -71,7 +60,12 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
     private int colorId;        // for passing model color information
     private int normalId;       // for passing model normal information
 
+    // float buffers for cube data
+    private final FloatBuffer cubePositions;
+    private final FloatBuffer cubeColors;
+    private final FloatBuffer cubeNormals;
 
+    // sizes and offsets for regions in the float buffers
     private final int bytesPerFloat = 4;        // no. of bytes per float
     //private final int strideBytes = 7 * bytesPerFloat;  // no. of elements per row
     private final int positionOffset = 0;       // offset of the position data
@@ -80,14 +74,15 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
     private final int colorDataSize = 4;        // size of color data in elements
     private final int normalDataSize = 3;       // size of normal data in elements
 
-    private final float[] lightPosInModelSpace =
-            new float[] {0.0f, 0.0f, 0.0f, 1.0f };
+    // data descriptions of the in-scene light source
+    private final float[] lightPosInModelSpace = new float[] {0.0f, 0.0f, 0.0f, 1.0f };
 
     // current pos of light in world space xformed by model matrix
     private float[] lightPosInWorldSpace = new float[4];
     // xformed pos of light in eye space after xformed by model/view matrix
     private float[] lightPosInEyeSpace = new float[4];
 
+    // id's (or handles) of shader programs
     private int cubeProgramId;      // handle to per-fragment cube shading program
     private int lightProgramId;     // handle to light point program
 
@@ -249,34 +244,31 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
                 0.0f, -1.0f, 0.0f
         };
 
-        // Initialize the buffers.
+        // Initialize the float buffers for position, color, and normals
         cubePositions = ByteBuffer.allocateDirect(cubePositionData.length * bytesPerFloat)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer();
+                .order(ByteOrder.nativeOrder()).asFloatBuffer();
         cubePositions.put(cubePositionData).position(0);
 
         cubeColors = ByteBuffer.allocateDirect(cubeColorData.length * bytesPerFloat)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer();
+                .order(ByteOrder.nativeOrder()).asFloatBuffer();
         cubeColors.put(cubeColorData).position(0);
 
         cubeNormals = ByteBuffer.allocateDirect(cubeNormalData.length * bytesPerFloat)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer();
+                .order(ByteOrder.nativeOrder()).asFloatBuffer();
         cubeNormals.put(cubeNormalData).position(0);
-    }  // public PerPixelLightingRenderer(
+    }  // public UsingShadersRenderer(
 
     /** GLSurfaceView calls this method when the surface is created, like
      * when the application is run for the first time, or after the user
-     * switches back to the Week3Activity. */
+     * switches back to the UsingShadersActivity. */
     @Override
     public void onSurfaceCreated(GL10 glUnused, EGLConfig config) {
         //Log.d(USINGSHADERSRENDERER, "OnSurfaceCreated");
-
         glClearColor(0.25f, 0.25f, 0.25f, 0.0f);
+        glEnable(GLES20.GL_CULL_FACE);
+        glEnable(GLES20.GL_DEPTH_TEST);
         setupEyePosition();
         setupShaders();
-
     }
 
     /** GLSurfaceView calls this after the surface is created and when the
@@ -315,50 +307,50 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
 
         // Set program handles for cube drawing.
         mvpMatrixId = GLES20.glGetUniformLocation(cubeProgramId, "u_MVPMatrix");
-        mvMatrixId = GLES20.glGetUniformLocation(cubeProgramId, "u_MVMatrix");
-        lightPosId = GLES20.glGetUniformLocation(cubeProgramId, "u_LightPos");
-        positionId = GLES20.glGetAttribLocation(cubeProgramId, "a_Position");
-        colorId = GLES20.glGetAttribLocation(cubeProgramId, "a_Color");
-        normalId = GLES20.glGetAttribLocation(cubeProgramId, "a_Normal");
+        mvMatrixId  = GLES20.glGetUniformLocation(cubeProgramId, "u_MVMatrix");
+        lightPosId  = GLES20.glGetUniformLocation(cubeProgramId, "u_LightPos");
+        positionId  = GLES20.glGetAttribLocation(cubeProgramId,  "a_Position");
+        colorId     = GLES20.glGetAttribLocation(cubeProgramId,  "a_Color");
+        normalId    = GLES20.glGetAttribLocation(cubeProgramId,  "a_Normal");
 
         // Calculate position of the light. Rotate and then push into the distance.
         Matrix.setIdentityM(lightModelMatrix, 0);
-        Matrix.translateM(lightModelMatrix, 0, 0.0f, 0.0f, -5.0f);
-        Matrix.rotateM(lightModelMatrix, 0, angleInDegrees, 0.0f, 1.0f, 0.0f);
-        Matrix.translateM(lightModelMatrix, 0, 0.0f, 0.0f, 2.0f);
+        Matrix.translateM  (lightModelMatrix, 0, 0.0f, 0.0f, -5.0f);
+        Matrix.rotateM     (lightModelMatrix, 0, angleInDegrees, 0.0f, 1.0f, 0.0f);
+        Matrix.translateM  (lightModelMatrix, 0, 0.0f, 0.0f, 2.0f);
 
         Matrix.multiplyMV(lightPosInWorldSpace, 0, lightModelMatrix, 0, lightPosInModelSpace, 0);
-        Matrix.multiplyMV(lightPosInEyeSpace, 0, viewMatrix, 0, lightPosInWorldSpace, 0);
+        Matrix.multiplyMV(lightPosInEyeSpace,   0, viewMatrix,       0, lightPosInWorldSpace, 0);
 
         // Draw some cubes.
         Matrix.setIdentityM(modelMatrix, 0);
-        Matrix.translateM(modelMatrix, 0, 4.0f, 0.0f, -7.0f);
-        Matrix.rotateM(modelMatrix, 0, angleInDegrees, 1.0f, 0.0f, 0.0f);
+        Matrix.translateM  (modelMatrix, 0, 4.0f, 0.0f, -7.0f);
+        Matrix.rotateM     (modelMatrix, 0, angleInDegrees, 1.0f, 0.0f, 0.0f);
         drawCube();
 
         Matrix.setIdentityM(modelMatrix, 0);
-        Matrix.translateM(modelMatrix, 0, -4.0f, 0.0f, -7.0f);
-        Matrix.rotateM(modelMatrix, 0, angleInDegrees, 0.0f, 1.0f, 0.0f);
+        Matrix.translateM  (modelMatrix, 0, -4.0f, 0.0f, -7.0f);
+        Matrix.rotateM     (modelMatrix, 0, angleInDegrees, 0.0f, 1.0f, 0.0f);
         drawCube();
 
         Matrix.setIdentityM(modelMatrix, 0);
-        Matrix.translateM(modelMatrix, 0, 0.0f, 4.0f, -7.0f);
-        Matrix.rotateM(modelMatrix, 0, angleInDegrees, 0.0f, 0.0f, 1.0f);
+        Matrix.translateM  (modelMatrix, 0, 0.0f, 4.0f, -7.0f);
+        Matrix.rotateM     (modelMatrix, 0, angleInDegrees, 0.0f, 0.0f, 1.0f);
         drawCube();
 
         Matrix.setIdentityM(modelMatrix, 0);
-        Matrix.translateM(modelMatrix, 0, 0.0f, -4.0f, -7.0f);
+        Matrix.translateM  (modelMatrix, 0, 0.0f, -4.0f, -7.0f);
         drawCube();
 
         Matrix.setIdentityM(modelMatrix, 0);
-        Matrix.translateM(modelMatrix, 0, 0.0f, 0.0f, -5.0f);
-        Matrix.rotateM(modelMatrix, 0, angleInDegrees, 1.0f, 1.0f, 0.0f);
+        Matrix.translateM  (modelMatrix, 0, 0.0f, 0.0f, -5.0f);
+        Matrix.rotateM     (modelMatrix, 0, angleInDegrees, 1.0f, 1.0f, 0.0f);
         drawCube();
 
         // Draw a point to indicate the light.
         GLES20.glUseProgram(lightProgramId);
         drawLight();
-    }
+    }  // public void onDrawFrame(
 
     private void drawCube()
     {
@@ -402,7 +394,7 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
 
         // Draw the cube.
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 36);
-    }
+    }  // private void drawCube(
 
     private void drawLight()
     {
@@ -422,7 +414,7 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
 
         // Draw the point.
         GLES20.glDrawArrays(GLES20.GL_POINTS, 0, 1);
-    }
+    }  // private void drawLight(
 
     private void setupEyePosition() {
         // Eye position
@@ -442,7 +434,7 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
 
         // Set the view matrix
         Matrix.setLookAtM(viewMatrix, 0, eyeX, eyeY, eyeZ, lookX, lookY, lookZ, upX, upY, upZ);
-    }
+    } // private void setupEyePosition(
 
     private void setupShaders() {
         // compile and link the cube drawing shader program first
@@ -467,10 +459,10 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
 
         // compile and link the light drawing shader program
         vertexShaderSource =
-                TextResourceReader.readTextFileFromResource(context, R.raw.vshader_perfragmentlighting);
+                TextResourceReader.readTextFileFromResource(context, R.raw.vshader_pointlightsrc);
 
         fragmentShaderSource =
-                TextResourceReader.readTextFileFromResource(context, R.raw.fshader_perfragmentlighting);
+                TextResourceReader.readTextFileFromResource(context, R.raw.fshader_pointlightsrc);
 
         // compile the shaders
         vertexShader = ShaderHelper.compileVertexShader(vertexShaderSource);
@@ -481,7 +473,7 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
 
         // see if the shaders were combined into a valid program
         if (LoggerConfig.ON) {
-            ShaderHelper.validateProgram(cubeProgramId);
+            ShaderHelper.validateProgram(lightProgramId);
         }
-    }
+    }  // private void setupShaders(
 }
