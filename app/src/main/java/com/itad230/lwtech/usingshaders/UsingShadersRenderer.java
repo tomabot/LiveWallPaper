@@ -14,23 +14,15 @@ import java.nio.FloatBuffer;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import util.FloatResourceReader;
 import util.LoggerConfig;
 import util.ShaderHelper;
 import util.TextResourceReader;
 
-import static android.opengl.GLES20.GL_CULL_FACE;
-import static android.opengl.GLES20.glClear;
 import static android.opengl.GLES20.glClearColor;
 import static android.opengl.GLES20.glEnable;
-import static android.opengl.GLES20.glGetAttribLocation;
-import static android.opengl.GLES20.glGetUniformLocation;
-import static android.opengl.GLES20.glUseProgram;
 import static android.opengl.GLES20.glVertexAttribPointer;
 import static android.opengl.GLES20.glViewport;
-
-import static android.opengl.GLES20.GL_COLOR_BUFFER_BIT;
-import static android.opengl.GLES20.GL_DEPTH_BUFFER_BIT;
-import static android.opengl.GLES20.GL_FLOAT;
 
 /**
  * Created by tomabot on 4/22/15.
@@ -61,9 +53,9 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
     private int normalId;       // for passing model normal information
 
     // float buffers for cube data
-    private final FloatBuffer cubePositions;
-    private final FloatBuffer cubeColors;
-    private final FloatBuffer cubeNormals;
+    private FloatBuffer cubeVertexes;
+    private FloatBuffer cubeColors;
+    private FloatBuffer cubeNormals;
 
     // sizes and offsets for regions in the float buffers
     private final int bytesPerFloat = 4;        // no. of bytes per float
@@ -90,164 +82,15 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
     {
         Log.d(USINGSHADERSRENDERER, "UsingShadersRenderer");
         this.context = context;
-        // Define points for a cube.
 
-        // X, Y, Z
-        final float[] cubePositionData = {
-                // Front face
-                -1.0f, 1.0f, 1.0f,
-                -1.0f, -1.0f, 1.0f,
-                1.0f, 1.0f, 1.0f,
-                -1.0f, -1.0f, 1.0f,
-                1.0f, -1.0f, 1.0f,
-                1.0f, 1.0f, 1.0f,
-
-                // Right face
-                1.0f, 1.0f, 1.0f,
-                1.0f, -1.0f, 1.0f,
-                1.0f, 1.0f, -1.0f,
-                1.0f, -1.0f, 1.0f,
-                1.0f, -1.0f, -1.0f,
-                1.0f, 1.0f, -1.0f,
-
-                // Back face
-                1.0f, 1.0f, -1.0f,
-                1.0f, -1.0f, -1.0f,
-                -1.0f, 1.0f, -1.0f,
-                1.0f, -1.0f, -1.0f,
-                -1.0f, -1.0f, -1.0f,
-                -1.0f, 1.0f, -1.0f,
-
-                // Left face
-                -1.0f, 1.0f, -1.0f,
-                -1.0f, -1.0f, -1.0f,
-                -1.0f, 1.0f, 1.0f,
-                -1.0f, -1.0f, -1.0f,
-                -1.0f, -1.0f, 1.0f,
-                -1.0f, 1.0f, 1.0f,
-
-                // Top face
-                -1.0f, 1.0f, -1.0f,
-                -1.0f, 1.0f, 1.0f,
-                1.0f, 1.0f, -1.0f,
-                -1.0f, 1.0f, 1.0f,
-                1.0f, 1.0f, 1.0f,
-                1.0f, 1.0f, -1.0f,
-
-                // Bottom face
-                1.0f, -1.0f, -1.0f,
-                1.0f, -1.0f, 1.0f,
-                -1.0f, -1.0f, -1.0f,
-                1.0f, -1.0f, 1.0f,
-                -1.0f, -1.0f, 1.0f,
-                -1.0f, -1.0f, -1.0f,
-        };
-
-        // R, G, B, A
-        final float[] cubeColorData = {
-                // Front face (red)
-                1.0f, 0.0f, 0.0f, 1.0f,
-                1.0f, 0.0f, 0.0f, 1.0f,
-                1.0f, 0.0f, 0.0f, 1.0f,
-                1.0f, 0.0f, 0.0f, 1.0f,
-                1.0f, 0.0f, 0.0f, 1.0f,
-                1.0f, 0.0f, 0.0f, 1.0f,
-
-                // Right face (green)
-                0.0f, 1.0f, 0.0f, 1.0f,
-                0.0f, 1.0f, 0.0f, 1.0f,
-                0.0f, 1.0f, 0.0f, 1.0f,
-                0.0f, 1.0f, 0.0f, 1.0f,
-                0.0f, 1.0f, 0.0f, 1.0f,
-                0.0f, 1.0f, 0.0f, 1.0f,
-
-                // Back face (blue)
-                0.0f, 0.0f, 1.0f, 1.0f,
-                0.0f, 0.0f, 1.0f, 1.0f,
-                0.0f, 0.0f, 1.0f, 1.0f,
-                0.0f, 0.0f, 1.0f, 1.0f,
-                0.0f, 0.0f, 1.0f, 1.0f,
-                0.0f, 0.0f, 1.0f, 1.0f,
-
-                // Left face (yellow)
-                1.0f, 1.0f, 0.0f, 1.0f,
-                1.0f, 1.0f, 0.0f, 1.0f,
-                1.0f, 1.0f, 0.0f, 1.0f,
-                1.0f, 1.0f, 0.0f, 1.0f,
-                1.0f, 1.0f, 0.0f, 1.0f,
-                1.0f, 1.0f, 0.0f, 1.0f,
-
-                // Top face (cyan)
-                0.0f, 1.0f, 1.0f, 1.0f,
-                0.0f, 1.0f, 1.0f, 1.0f,
-                0.0f, 1.0f, 1.0f, 1.0f,
-                0.0f, 1.0f, 1.0f, 1.0f,
-                0.0f, 1.0f, 1.0f, 1.0f,
-                0.0f, 1.0f, 1.0f, 1.0f,
-
-                // Bottom face (magenta)
-                1.0f, 0.0f, 1.0f, 1.0f,
-                1.0f, 0.0f, 1.0f, 1.0f,
-                1.0f, 0.0f, 1.0f, 1.0f,
-                1.0f, 0.0f, 1.0f, 1.0f,
-                1.0f, 0.0f, 1.0f, 1.0f,
-                1.0f, 0.0f, 1.0f, 1.0f
-        };
-
-        final float[] cubeNormalData = {
-                // Front face
-                0.0f, 0.0f, 1.0f,
-                0.0f, 0.0f, 1.0f,
-                0.0f, 0.0f, 1.0f,
-                0.0f, 0.0f, 1.0f,
-                0.0f, 0.0f, 1.0f,
-                0.0f, 0.0f, 1.0f,
-
-                // Right face
-                1.0f, 0.0f, 0.0f,
-                1.0f, 0.0f, 0.0f,
-                1.0f, 0.0f, 0.0f,
-                1.0f, 0.0f, 0.0f,
-                1.0f, 0.0f, 0.0f,
-                1.0f, 0.0f, 0.0f,
-
-                // Back face
-                0.0f, 0.0f, -1.0f,
-                0.0f, 0.0f, -1.0f,
-                0.0f, 0.0f, -1.0f,
-                0.0f, 0.0f, -1.0f,
-                0.0f, 0.0f, -1.0f,
-                0.0f, 0.0f, -1.0f,
-
-                // Left face
-                -1.0f, 0.0f, 0.0f,
-                -1.0f, 0.0f, 0.0f,
-                -1.0f, 0.0f, 0.0f,
-                -1.0f, 0.0f, 0.0f,
-                -1.0f, 0.0f, 0.0f,
-                -1.0f, 0.0f, 0.0f,
-
-                // Top face
-                0.0f, 1.0f, 0.0f,
-                0.0f, 1.0f, 0.0f,
-                0.0f, 1.0f, 0.0f,
-                0.0f, 1.0f, 0.0f,
-                0.0f, 1.0f, 0.0f,
-                0.0f, 1.0f, 0.0f,
-
-                // Bottom face
-                0.0f, -1.0f, 0.0f,
-                0.0f, -1.0f, 0.0f,
-                0.0f, -1.0f, 0.0f,
-                0.0f, -1.0f, 0.0f,
-                0.0f, -1.0f, 0.0f,
-                0.0f, -1.0f, 0.0f
-        };
+        float[] cubeVertexData = FloatResourceReader.readFloatFileFromResource(context, R.raw.cube_vertexes);
+        float[] cubeColorData  = FloatResourceReader.readFloatFileFromResource(context, R.raw.cube_colors);
+        float[] cubeNormalData = FloatResourceReader.readFloatFileFromResource(context, R.raw.cube_normals);
 
         // Initialize the float buffers for position, color, and normals
-        cubePositions = ByteBuffer.allocateDirect(cubePositionData.length * bytesPerFloat)
+        cubeVertexes = ByteBuffer.allocateDirect(cubeVertexData.length * bytesPerFloat)
                 .order(ByteOrder.nativeOrder()).asFloatBuffer();
-        cubePositions.put(cubePositionData).position(0);
+        cubeVertexes.put(cubeVertexData).position(0);
 
         cubeColors = ByteBuffer.allocateDirect(cubeColorData.length * bytesPerFloat)
                 .order(ByteOrder.nativeOrder()).asFloatBuffer();
@@ -264,7 +107,7 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceCreated(GL10 glUnused, EGLConfig config) {
         //Log.d(USINGSHADERSRENDERER, "OnSurfaceCreated");
-        glClearColor(0.25f, 0.25f, 0.25f, 0.0f);
+        glClearColor(0.0f, 0.0f, 0.25f, 0.0f);
         glEnable(GLES20.GL_CULL_FACE);
         glEnable(GLES20.GL_DEPTH_TEST);
         setupEyePosition();
@@ -301,11 +144,12 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
         // Do a complete rotation every 10 seconds.
         long time = SystemClock.uptimeMillis() % 10000L;
         float angleInDegrees = (360.0f / 10000.0f) * ((int) time);
+        float fastAngleInDegrees = (360.0f / 5000.0f) * ((int) time);
 
         // Set our per-vertex lighting program.
         GLES20.glUseProgram(cubeProgramId);
 
-        // Set program handles for cube drawing.
+        // Set program id's (handles) for cube drawing.
         mvpMatrixId = GLES20.glGetUniformLocation(cubeProgramId, "u_MVPMatrix");
         mvMatrixId  = GLES20.glGetUniformLocation(cubeProgramId, "u_MVMatrix");
         lightPosId  = GLES20.glGetUniformLocation(cubeProgramId, "u_LightPos");
@@ -323,28 +167,34 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
         Matrix.multiplyMV(lightPosInEyeSpace,   0, viewMatrix,       0, lightPosInWorldSpace, 0);
 
         // Draw some cubes.
+        // right
         Matrix.setIdentityM(modelMatrix, 0);
         Matrix.translateM  (modelMatrix, 0, 4.0f, 0.0f, -7.0f);
         Matrix.rotateM     (modelMatrix, 0, angleInDegrees, 1.0f, 0.0f, 0.0f);
         drawCube();
 
+        // left
         Matrix.setIdentityM(modelMatrix, 0);
         Matrix.translateM  (modelMatrix, 0, -4.0f, 0.0f, -7.0f);
-        Matrix.rotateM     (modelMatrix, 0, angleInDegrees, 0.0f, 1.0f, 0.0f);
+        Matrix.rotateM     (modelMatrix, 0, -angleInDegrees, 0.0f, 1.0f, 0.0f);
         drawCube();
 
+        // top
         Matrix.setIdentityM(modelMatrix, 0);
         Matrix.translateM  (modelMatrix, 0, 0.0f, 4.0f, -7.0f);
         Matrix.rotateM     (modelMatrix, 0, angleInDegrees, 0.0f, 0.0f, 1.0f);
         drawCube();
 
+        // bottom
         Matrix.setIdentityM(modelMatrix, 0);
         Matrix.translateM  (modelMatrix, 0, 0.0f, -4.0f, -7.0f);
+        Matrix.rotateM     (modelMatrix, 0, -angleInDegrees, 0.0f, 1.0f, 0.0f); // tom was here
         drawCube();
 
+        // center
         Matrix.setIdentityM(modelMatrix, 0);
         Matrix.translateM  (modelMatrix, 0, 0.0f, 0.0f, -5.0f);
-        Matrix.rotateM     (modelMatrix, 0, angleInDegrees, 1.0f, 1.0f, 0.0f);
+        Matrix.rotateM     (modelMatrix, 0, fastAngleInDegrees, 0.0f, 1.0f, 1.0f);
         drawCube();
 
         // Draw a point to indicate the light.
@@ -355,9 +205,9 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
     private void drawCube()
     {
         // Pass in the position information
-        cubePositions.position(0);
+        cubeVertexes.position(0);
         GLES20.glVertexAttribPointer(positionId, positionDataSize, GLES20.GL_FLOAT, false,
-                0, cubePositions);
+                0, cubeVertexes);
 
         GLES20.glEnableVertexAttribArray(positionId);
 
