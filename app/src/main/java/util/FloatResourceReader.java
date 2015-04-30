@@ -10,9 +10,7 @@ import java.util.Locale;
 import java.util.Scanner;
 
 public class FloatResourceReader {
-
     public static float[] readFloatFileFromResource( Context context, int resourceId ) {
-
         ArrayList<Float> list = new ArrayList<Float>();
         Scanner scan = null;
 
@@ -47,12 +45,10 @@ public class FloatResourceReader {
                 e.getMessage();
             }
         }
-
         float rtnArray[] = new float[ list.size( )];
         for( int i = 0; i < list.size( ); i++ ) {
             rtnArray[ i ] = list.get( i );
         }
-
         return rtnArray;
     }
 }

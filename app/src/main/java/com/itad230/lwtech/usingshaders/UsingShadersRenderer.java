@@ -159,9 +159,13 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
 
         // Calculate position of the light. Rotate and then push into the distance.
         Matrix.setIdentityM(lightModelMatrix, 0);
-        Matrix.translateM  (lightModelMatrix, 0, 0.0f, 0.0f, -5.0f);
+        Matrix.translateM  (lightModelMatrix, 0, 0.0f, 0.0f, -7.0f);
         Matrix.rotateM     (lightModelMatrix, 0, angleInDegrees, 0.0f, 1.0f, 0.0f);
+        //Matrix.rotateM     (lightModelMatrix, 0, angleInDegrees, angleInDegrees, 1.0f, 0.0f);
         Matrix.translateM  (lightModelMatrix, 0, 0.0f, 0.0f, 2.0f);
+
+        //setupEyePosition();
+        //Matrix.rotateM(viewMatrix, 0, angleInDegrees, 0.0f, 0.0f, 1.0f);
 
         Matrix.multiplyMV(lightPosInWorldSpace, 0, lightModelMatrix, 0, lightPosInModelSpace, 0);
         Matrix.multiplyMV(lightPosInEyeSpace,   0, viewMatrix,       0, lightPosInWorldSpace, 0);
@@ -193,7 +197,8 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
 
         // center
         Matrix.setIdentityM(modelMatrix, 0);
-        Matrix.translateM  (modelMatrix, 0, 0.0f, 0.0f, -5.0f);
+        //Matrix.translateM  (modelMatrix, 0, 0.0f, 0.0f, -5.0f);
+        Matrix.translateM  (modelMatrix, 0, 0.0f, 0.0f, -7.0f);
         Matrix.rotateM     (modelMatrix, 0, fastAngleInDegrees, 0.0f, 1.0f, 1.0f);
         drawCube();
 

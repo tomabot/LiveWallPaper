@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/ManagingResources.iml" filepath="$PROJECT_DIR$/ManagingResources.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/itad230_spring2015_usingshaders.iml" filepath="$PROJECT_DIR$/itad230_spring2015_usingshaders.iml" />
     </modules>
