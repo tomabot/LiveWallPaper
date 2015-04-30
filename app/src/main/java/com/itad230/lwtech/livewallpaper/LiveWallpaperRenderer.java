@@ -1,4 +1,4 @@
-package com.itad230.lwtech.usingshaders;
+package com.itad230.lwtech.livewallpaper;
 
 import android.content.Context;
 import android.opengl.GLES20;
@@ -27,8 +27,8 @@ import static android.opengl.GLES20.glViewport;
 /**
  * Created by tomabot on 4/22/15.
  */
-public class UsingShadersRenderer implements GLSurfaceView.Renderer {
-    private static final String USINGSHADERSRENDERER = "UsingShadersRenderer";
+public class LiveWallpaperRenderer implements GLSurfaceView.Renderer {
+    private static final String USINGSHADERSRENDERER = "LiveWallpaperRenderer";
 
     private final Context context;
 
@@ -78,9 +78,9 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
     private int cubeProgramId;      // handle to per-fragment cube shading program
     private int lightProgramId;     // handle to light point program
 
-    public UsingShadersRenderer(Context context)
+    public LiveWallpaperRenderer(Context context)
     {
-        Log.d(USINGSHADERSRENDERER, "UsingShadersRenderer");
+        Log.d(USINGSHADERSRENDERER, "LiveWallpaperRenderer");
         this.context = context;
 
         float[] cubeVertexData = FloatResourceReader.readFloatFileFromResource(context, R.raw.cube_vertexes);
@@ -99,11 +99,11 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
         cubeNormals = ByteBuffer.allocateDirect(cubeNormalData.length * bytesPerFloat)
                 .order(ByteOrder.nativeOrder()).asFloatBuffer();
         cubeNormals.put(cubeNormalData).position(0);
-    }  // public UsingShadersRenderer(
+    }  // public LiveWallpaperRenderer(
 
     /** GLSurfaceView calls this method when the surface is created, like
      * when the application is run for the first time, or after the user
-     * switches back to the UsingShadersActivity. */
+     * switches back to the LiveWallpaperActivity. */
     @Override
     public void onSurfaceCreated(GL10 glUnused, EGLConfig config) {
         //Log.d(USINGSHADERSRENDERER, "OnSurfaceCreated");
@@ -144,7 +144,6 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
         // Do a complete rotation every 10 seconds.
         long time = SystemClock.uptimeMillis() % 10000L;
         float angleInDegrees = (360.0f / 10000.0f) * ((int) time);
-        float fastAngleInDegrees = (360.0f / 5000.0f) * ((int) time);
 
         // Set our per-vertex lighting program.
         GLES20.glUseProgram(cubeProgramId);
@@ -164,8 +163,8 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
         //Matrix.rotateM     (lightModelMatrix, 0, angleInDegrees, angleInDegrees, 1.0f, 0.0f);
         Matrix.translateM  (lightModelMatrix, 0, 0.0f, 0.0f, 2.0f);
 
-        //setupEyePosition();
-        //Matrix.rotateM(viewMatrix, 0, angleInDegrees, 0.0f, 0.0f, 1.0f);
+        setupEyePosition();
+        Matrix.rotateM(viewMatrix, 0, angleInDegrees, 0.0f, 0.0f, 1.0f);
 
         Matrix.multiplyMV(lightPosInWorldSpace, 0, lightModelMatrix, 0, lightPosInModelSpace, 0);
         Matrix.multiplyMV(lightPosInEyeSpace,   0, viewMatrix,       0, lightPosInWorldSpace, 0);
@@ -199,7 +198,7 @@ public class UsingShadersRenderer implements GLSurfaceView.Renderer {
         Matrix.setIdentityM(modelMatrix, 0);
         //Matrix.translateM  (modelMatrix, 0, 0.0f, 0.0f, -5.0f);
         Matrix.translateM  (modelMatrix, 0, 0.0f, 0.0f, -7.0f);
-        Matrix.rotateM     (modelMatrix, 0, fastAngleInDegrees, 0.0f, 1.0f, 1.0f);
+        Matrix.rotateM     (modelMatrix, 0, angleInDegrees, 0.0f, 1.0f, 1.0f);
         drawCube();
 
         // Draw a point to indicate the light.

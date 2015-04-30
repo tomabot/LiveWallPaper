@@ -1,4 +1,4 @@
-package com.itad230.lwtech.usingshaders;
+package com.itad230.lwtech.livewallpaper;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

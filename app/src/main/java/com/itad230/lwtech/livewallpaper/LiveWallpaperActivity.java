@@ -1,4 +1,4 @@
-package com.itad230.lwtech.usingshaders;
+package com.itad230.lwtech.livewallpaper;
 
 import android.app.ActivityManager;
 import android.content.Context;
@@ -12,7 +12,7 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 
-public class UsingShadersActivity extends ActionBarActivity {
+public class LiveWallpaperActivity extends ActionBarActivity {
     // ...1st, add these two member variables...
     private GLSurfaceView glSurfaceView;
     private boolean rendererSet = false;
@@ -51,7 +51,7 @@ public class UsingShadersActivity extends ActionBarActivity {
             glSurfaceView.setEGLContextClientVersion(2);
 
             // Assign a renderer
-            glSurfaceView.setRenderer(new UsingShadersRenderer(this));
+            glSurfaceView.setRenderer(new LiveWallpaperRenderer(this));
             rendererSet = true;
         } else {
             Toast.makeText(this, "This device does not support OpenGL ES 2.0.",
