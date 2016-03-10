@@ -1,18 +1,18 @@
 package com.itad230.lwtech.livewallpaper;
 
+import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.ConfigurationInfo;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
 
-public class LiveWallpaperActivity extends ActionBarActivity {
+public class LiveWallpaperActivity extends Activity {
     // ...1st, add these two member variables...
     private GLSurfaceView glSurfaceView;
     private boolean rendererSet = false;
@@ -49,6 +49,7 @@ public class LiveWallpaperActivity extends ActionBarActivity {
         if (supportsEs2) {
             // get an OpenGL ES 2 compatible context
             glSurfaceView.setEGLContextClientVersion(2);
+            glSurfaceView.setEGLConfigChooser(8,8,8,8,16,0);
 
             // Assign a renderer
             glSurfaceView.setRenderer(new LiveWallpaperRenderer(this));

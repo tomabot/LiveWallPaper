@@ -3,10 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/LiveWallPaper.iml" filepath="$PROJECT_DIR$/LiveWallPaper.iml" />
-      <module fileurl="file://$PROJECT_DIR$/ManagingResources.iml" filepath="$PROJECT_DIR$/ManagingResources.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/itad230_spring2015_com.iml" filepath="$PROJECT_DIR$/itad230_spring2015_com.iml" />
     </modules>
   </component>
 </project>
-
